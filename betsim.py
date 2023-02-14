@@ -126,6 +126,24 @@ def getSimKPI_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, 
 
     return dfSim, dictKPI
 
+def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
+    """Obtain percentage of simulations with final amount dropping below the given equity threshold."""
+    # Transpose the simulation dataframe
+    dfSimT = dfSim.transpose()
+    numTrial = dfSim.shape[1]
+    numSim = dfSim.shape[0]
+    # Compute MDD
+    dfMDD = pd.DataFrame(columns=dfSimT.columns)
+    for col in dfSimT.columns:
+        dfMDD[col] = (dfSimT[col] / dfSimT[col].cummax() - 1).cummin()
+    # Tranpose back to match original shape
+    dfMDD = dfMDD.transpose()
+    # Compute percentage of simulations having MDD greater than the levels
+    dictMDD = {}
+    for value in levelsMDD:
+        dictMDD[value] = dfMDD[dfMDD[numTrial] <= -value].shape[0] / numSim
+
+    return dfMDD, dictMDD
 
 def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
     """Plot equity curves from the betting simulations."""
@@ -184,3 +202,4 @@ def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, nu
     plt.semilogy(dfplot)
     plt.plot(dfplot.index, np.repeat(initAmount, numPeriod), color='black', linewidth=3, linestyle='dashed')
     plt.show()
+
