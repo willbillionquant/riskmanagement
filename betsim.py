@@ -110,3 +110,20 @@ def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSi
     dictKPI['amountStd'] = round(dfSim[numTrial].std(), 2)
 
     return dfSim, dictKPI
+
+def getSimKPI_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+    """Obtain a dictionary of final performance KPI of simulations. """
+    dfSim = getSim_fixLev(initAmount, lev, miu, sig, numPeriod, numSim)
+    dictKPI = {}
+    dictKPI['miu'] = miu
+    dictKPI['sig'] = sig
+    dictKPI['lev'] = lev
+    dictKPI['NAsharpe'] = round(miu * (numPeriod ** 0.5) / sig, 4)
+    dictKPI['win%'] = round(100 * dfSim[dfSim[numPeriod] >= initAmount].shape[0] / numSim, 2)
+    dictKPI['amountAvg'] = round(dfSim[numPeriod].mean(), 2)
+    dictKPI['amountMed'] = round(dfSim[numPeriod].median(), 2)
+    dictKPI['amountStd'] = round(dfSim[numPeriod].std(), 2)
+
+    return dfSim, dictKPI
+
+
