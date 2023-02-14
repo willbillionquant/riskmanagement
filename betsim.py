@@ -5,14 +5,7 @@ sys.path.append('..')
 
 import numpy as np
 import pandas as pd
-
-from datetime import datetime, timedelta
-from itertools import product
-from scipy.stats import norm
-
 import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.graph_objects as go
 
 def getSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
     """
@@ -203,3 +196,20 @@ def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, nu
     plt.plot(dfplot.index, np.repeat(initAmount, numPeriod), color='black', linewidth=3, linestyle='dashed')
     plt.show()
 
+def getExpGrowth(p=0.5, b=1.5, f=0.1, n=1):
+    """
+    Obtain expected geometric return of repeated trials of a binary game.
+    p: winning rate
+    b: odds / reward-risk-ratio
+    f: fixed percent of each bet
+    n: number of trials
+    """
+    logGrowth = p * np.log(1 + b * f) + (1 - p) * np.log(1 - f)
+
+    return np.exp(n * logGrowth)
+
+def getNormalGrowth(lev=1.00, miu=0.03, sig=0.15, n=1):
+    """Obtain expected geometric returns of random walk returns."""
+    logGrowth = n * lev * (miu - sig ** 2 * lev / 2)
+
+    return np.exp(n * logGrowth)
