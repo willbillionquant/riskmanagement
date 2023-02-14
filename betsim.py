@@ -127,3 +127,60 @@ def getSimKPI_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, 
     return dfSim, dictKPI
 
 
+def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
+    """Plot equity curves from the betting simulations."""
+    # Dataframe and KPI dict from `getSimKPI_fixPctBet()` function
+    dfSim, dictKPI = getSimKPI_fixPctBet(initAmount, f, p, b, numTrial, numSim)
+    # First line of diagram title
+    title = f'{numSim} simulations of {numTrial}-step binary game \n'
+    title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
+
+    # Percentage of final equity above or equal to initial amount
+    winrate = dictKPI['win%']
+    amountAvg = dictKPI['amountAvg']  # Arithmetic mean of final equity
+    amountMed = dictKPI['amountMed']  # Median of final equity
+    amountStd = dictKPI['amountStd']  # SD of final equity
+    profitfactor = dictKPI['profitfactor']
+
+    # Attach key stats to title text
+    title += f'Profit factor: {profitfactor}, final winrate: {winrate}% \n'
+    title += f'Final equity mean: {amountAvg}, median: {amountMed}, SD: {amountStd}'
+
+    # Plot figure & append title
+    fig = plt.figure(figsize=(12, 9))
+    fig.suptitle(title, fontsize=12)
+
+    # Transpose the equity dataframe to plot
+    dfPlot = dfSim.transpose()
+
+    # Adopt semi-log scale for fixed-percent-betting & linear scale for fixed-amount-betting
+    plt.semilogy(dfPlot)
+    plt.plot(dfPlot.index, np.repeat(initAmount, numTrial), color='black', linewidth=3, linestyle='dashed')
+    plt.show()
+
+def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+    """Plot equity curves from the betting simulations."""
+    # Dataframe and KPI dict from `getSimKPI()` function
+    dfSim, dictKPI = getSimKPI_fixLev(initAmount, lev, miu, sig, numPeriod, numSim)
+    # First line of diagram title
+    title = f'{numSim} simulations of {numPeriod}-periods \n'
+    title += f'leverage {round(lev, 4)}, miu {round(100*miu, 2)}%, sig {round(100*sig, 2)}%\n'
+    # Percentage of final equity above or equal to initial amount
+    winrate = dictKPI['win%']
+    amountAvg = dictKPI['amountAvg'] # Arithmetic mean of final equity
+    amountMed = dictKPI['amountMed'] # Median of final equity
+    amountStd = dictKPI['amountStd'] # SD of final equity
+    # Attach key stats to title text
+    sharpe = dictKPI['NAsharpe']
+    title += f'NA-sharpe: {sharpe}, final winrate: {winrate}% \n'
+    title += f'Final equity mean: {amountAvg}, median: {amountMed}, SD: {amountStd}'
+    # Plot figure
+    fig = plt.figure(figsize=(12, 9))
+    # Append title
+    fig.suptitle(title, fontsize=12)
+    # Transpose the equity dataframe to plot
+    dfplot = dfSim.transpose()
+    # Adopt semi-log scale for fixed-percent-betting & linear scale for fixed-amount-betting
+    plt.semilogy(dfplot)
+    plt.plot(dfplot.index, np.repeat(initAmount, numPeriod), color='black', linewidth=3, linestyle='dashed')
+    plt.show()
