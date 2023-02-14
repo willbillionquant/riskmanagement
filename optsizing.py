@@ -29,7 +29,7 @@ def getExpGrowth(p=0.5, b=1.5, f=0.1, n=1):
 
 def getNormalGrowth(lev=1.00, miu=0.03, sig=0.15, n=1):
     """Obtain expected geometric returns of random walk returns."""
-    logGrowth = n * lev * (miu - sig ** 2 * lev / 2)
+    logGrowth = lev * (miu - sig ** 2 * lev / 2)
 
     return np.exp(n * logGrowth)
 
@@ -49,4 +49,32 @@ def plotExpGrowth(p=0.5, b=1.5, n=1, fMin=0, fMax=0.5, step=0.01):
                              marker_size=10, text=f'{bestF, round(bestGrowth, 4)}', textposition='bottom center'))
     # Show diagram
     fig.show()
+
+def plotNormalGrowth(miu=0.03, sig=0.15, n=1, levMin=0.20, levMax=4.0, step=0.001):
+    """Plot expected geometric growth given miu & sigma, and identify optimal leverage."""
+    # Form pandas Series of expected return of varying leverage
+    arrLev = np.arange(levMin, levMax, step)
+    dictGrowth = {lev: getNormalGrowth(lev, miu, sig, n) for lev in arrLev}
+    dfGrowth = pd.DataFrame(pd.Series(dictGrowth))
+    # Plot interactive diagram of f-percent curve
+    fig = px.line(x=dfGrowth.index, y=dfGrowth[0], labels={'x': 'lev', 'y': f'growth factor on {n} periods'})
+    fig.add_trace(go.Scatter(x=dfGrowth.index, y=np.repeat(0, len(arrLev)), name='0%'))
+    # Identify optimal leverage
+    bestLev = round(dfGrowth[0].idxmax(), 4)
+    bestGrowth = round(dfGrowth[0].max(), 4)
+    fig.add_trace(go.Scatter(x=(bestLev, ), y=(bestGrowth, ), line_color='green', name='Opt-lev', mode='markers+text',
+                             marker_size=10, text=f'{bestLev, round(bestGrowth, 4)}', textposition='bottom center'))
+    # Title
+    fig.update_layout(title=f'Expected geometric growoth of N({miu}, {sig})', title_x=0.5, width=1000, height=500)
+    # Show diagram
+    fig.show()
+
+def getKellyF(p, b):
+    """Obtain the optimal f% by Kelly formula."""
+    return round(max((p * b - 1 + p) / b, 0), 4)
+
+def getkellyLev(miu, sig):
+    """Obtain Kelly formula of optimal leverage."""
+    return round(max(miu / sig**2, 0), 4)
+
 
