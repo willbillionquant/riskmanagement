@@ -78,3 +78,55 @@ def getkellyLev(miu, sig):
     return round(max(miu / sig**2, 0), 4)
 
 
+def resampleOHLC(dfData, listSymbol, freq='M'):
+    """Resample the OHLC dataframe into desired timeframe."""
+    dictRule = {}
+    for symbol in listSymbol:
+        dictSymbol = {f'{symbol}_op': 'first', f'{symbol}_cl': 'last',
+                      f'{symbol}_hi': 'max', f'{symbol}_lo': 'min', f'{symbol}_vol': 'sum'}
+        dictRule.update(dictSymbol)
+
+    dfData1 = dfData.resample(rule=freq, label='right').agg(dictRule)
+
+    return dfData1
+
+
+
+# Notebook
+dfAll = getYahooData(listSymbol, True, strStart, strEnd)
+dfAll_month = resampleOHLC(dfAll, listSymbol)
+
+numMonth = 36
+strStart1 = dfAll_month.index[-1 - numMonth].strftime('%Y-%m-%d')
+strEnd1 = dfAll_month.index[-1].strftime('%Y-%m-%d')
+
+dfOptLev = pd.DataFrame(columns=['miu', 'sig', 'NAsharpe', 'optlev'])
+dfPct = pd.DataFrame()
+
+for symbol in listSymbol:
+    dfMonth = dfAll_month.loc[strStart1:strEnd1, [f'{symbol}_cl']]
+    dfPct[f'{symbol}_pct'] = np.round(np.log(dfMonth[f'{symbol}_cl'] / dfMonth[f'{symbol}_cl'].shift(1)), 5)
+    dfPct[f'{symbol}_chg'] = np.round(dfMonth[f'{symbol}_cl'] / dfMonth[f'{symbol}_cl'].shift(1) - 1, 5)
+    dfOptLev.loc[symbol, 'miu'] = round(dfPct[f'{symbol}_pct'].mean(), 5)
+    dfOptLev.loc[symbol, 'sig'] = round(dfPct[f'{symbol}_pct'].std(), 5)
+    dfOptLev.loc[symbol, 'NAsharpe'] = round(
+        dfOptLev.loc[symbol, 'miu'] / dfOptLev.loc[symbol, 'sig'] * (numMonth ** 0.5), 4)
+    dfOptLev.loc[symbol, 'optLev'] = getkellyLev(dfOptLev.loc[symbol, 'miu'], dfOptLev.loc[symbol, 'sig'])
+
+dfNAV_1x = pd.DataFrame(index=dfPct.index)
+
+for symbol in listSymbol:
+    dfNAV_1x[f'{symbol}_NAV'] = (1 + dfPct[f'{symbol}_chg']).cumprod()
+
+dfNAV_1x.iloc[0] = 1.00
+
+for symbol in listSymbol:
+    dfNAV_1x[f'{symbol}_DD'] = dfNAV_1x[f'{symbol}_NAV'] / dfNAV_1x[f'{symbol}_NAV'].cummax() - 1
+    dfNAV_1x[f'{symbol}_MDD'] = dfNAV_1x[f'{symbol}_DD'].cummin()
+
+productfield = product(listSymbol, ['NAV', 'DD', 'MDD'])
+dfNAV_1x = dfNAV_1x[[f'{symbol}_{field}' for symbol, field in productfield]]
+
+
+for symbol, field in product(listSymbol, ['NAV', 'MDD']):
+    dfOptLev.loc[symbol, f'{field}_1x'] = dfNAV_1x.loc[strEnd1, f'{symbol}_{field}']
