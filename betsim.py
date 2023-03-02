@@ -7,32 +7,32 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def getSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
+def getSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """
     Obtain dictionary of equal-percent-bet simulation results.
     initAmount: initial amount for betting
     f: percent per bet
     p: winning probability
-    numTrials: number of trials of the same binary game
+    numTrialss: number of trials of the same binary game
     numSim: number of binary simulations
     """
     # Dict for recording different series of profit/loss
-    dictSim = {}
+    simDict = {}
     # Dict for recording different series of capital (total equity)
-    dictAmount = {}
+    amountDict = {}
     # Generate a total of `numSim`= N series of binary game result and P/L
     for num in range(numSim):
         # Generate a series of "1"/"0" with probability p
-        stepfunc = lambda x: 1 if x > 0 else 0  # Lambda Function for getting "1" with a fixed prob and "0" otherwise
-        arrSign = np.array([stepfunc(r) for r in np.random.uniform(p - 1, p, numTrial)])
+        stepFunc = lambda x: 1 if x > 0 else 0  # Lambda Function for getting "1" with a fixed prob and "0" otherwise
+        signArray = np.array([stepFunc(r) for r in np.random.uniform(p - 1, p, numTrials)])
         # Series of asset growth factor based on win/loss result (EITHER (1 + b * f%) OR (1 -f%))
-        arrTrial = 1 + f * ((b + 1) * arrSign - 1) / 100
-        # Record the asset growth factor series into `dictSim`
-        dictSim[num + 1] = arrTrial
-        # Array of total equity and record into `dictAmount`
-        dictAmount[f's{num + 1}'] = initAmount * arrTrial.cumprod()
-    # Form dataframe from the `dictAmount` and transpose, so that each row corresponds to a betting series
-    dfSim = pd.DataFrame(dictAmount).transpose()
+        trialArray = 1 + f * ((b + 1) * signArray - 1) / 100
+        # Record the asset growth factor series into `simDict`
+        simDict[num + 1] = trialArray
+        # Array of total equity and record into `amountDict`
+        amountDict[f's{num + 1}'] = initAmount * trialArray.cumprod()
+    # Form dataframe from the `amountDict` and transpose, so that each row corresponds to a betting series
+    dfSim = pd.DataFrame(amountDict).transpose()
     # Rename columns so that each number in column labels corresponds to the k-th trial
     dfSim = dfSim.rename(columns={k: (k + 1) for k in dfSim.columns})
 
@@ -49,29 +49,29 @@ def getSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, num
     numSim: number of simulations
     """
     # Dict for recording different series of total equity
-    dictAmount = {}
+    amountDict = {}
     # Generate a total of `numSim`= N series of normally distributed returns
     for num in range(numSim):
         # vector of log returns in each period and exponentiate
-        arrPct = np.exp(np.random.normal(miu, sig, numPeriod))
+        pctArray = np.exp(np.random.normal(miu, sig, numPeriod))
         # convert into growth factor vector by converting to percentage change vector, multiply by leverage, and add 1
-        arrFactor = 1 + lev * (arrPct - 1)
+        factorArray = 1 + lev * (pctArray - 1)
         # equity vector by cumulative multiplying by growth factors
-        arrAmount = initAmount * arrFactor.cumprod()
+        amountArray = initAmount * factorArray.cumprod()
         # IF equity drops to 0 or even below (due to over-leverage), stop betting, set the remaining equity to 1/10000
         # of initial amount and fix it in the remaining series (for the sake of legal semi-log equity curve plotting)
         # (This artificial "residual equity" is unreal assummption, the reality is more cruel than this!)
-        numBet = 1
-        amtRuin = initAmount / 10000
-        while numBet <= numPeriod - 1:
-            if arrAmount[numBet] <= amtRuin:
-                for j in range(numBet, numPeriod):
-                    arrAmount[j] = amtRuin
+        period = 1
+        ruimAmount = initAmount / 10000
+        while period <= numPeriod - 1:
+            if amountArray[period] <= ruimAmount:
+                for j in range(period, numPeriod):
+                    amountArray[j] = ruimAmount
                 break
-            numBet += 1
-        dictAmount[f's{num + 1}'] = arrAmount
-        # Form dataframe from the `dictAmount` and transpose, so that each row corresponds to a betting series
-    dfSim = pd.DataFrame(dictAmount).transpose()
+            period += 1
+        amountDict[f's{num + 1}'] = amountArray
+        # Form dataframe from the `amountDict` and transpose, so that each row corresponds to a betting series
+    dfSim = pd.DataFrame(amountDict).transpose()
     # Rename columns so that each number in column labels corresponds to the k-th trial
     dfSim = dfSim.rename(columns={k: (k + 1) for k in dfSim.columns})
 
@@ -89,18 +89,18 @@ def getWinrate(b, pf):
     """Given fixed odds and profit factor, find winning rate."""
     return pf / (pf + b)
 
-def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
+def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """Obtain a dictionary of final performance KPI of simulations. """
-    dfSim = getSim_fixPctBet(initAmount, f, p, b, numTrial, numSim)
+    dfSim = getSim_fixPctBet(initAmount, f, p, b, numTrials, numSim)
     dictKPI = {}
     dictKPI['p'] = p
     dictKPI['b'] = b
     dictKPI['f'] = f
     dictKPI['profitfactor'] = round(getProfitfactor(p, b), 4)
-    dictKPI['win%'] = round(100 * dfSim[dfSim[numTrial] >= initAmount].shape[0] / numSim, 2)
-    dictKPI['amountAvg'] = round(dfSim[numTrial].mean(), 2)
-    dictKPI['amountMed'] = round(dfSim[numTrial].median(), 2)
-    dictKPI['amountStd'] = round(dfSim[numTrial].std(), 2)
+    dictKPI['win%'] = round(100 * dfSim[dfSim[numTrials] >= initAmount].shape[0] / numSim, 2)
+    dictKPI['amountAvg'] = round(dfSim[numTrials].mean(), 2)
+    dictKPI['amountMed'] = round(dfSim[numTrials].median(), 2)
+    dictKPI['amountStd'] = round(dfSim[numTrials].std(), 2)
 
     return dfSim, dictKPI
 
@@ -123,7 +123,7 @@ def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
     """Obtain percentage of simulations with final amount dropping below the given equity threshold."""
     # Transpose the simulation dataframe
     dfSimT = dfSim.transpose()
-    numTrial = dfSim.shape[1]
+    numTrials = dfSim.shape[1]
     numSim = dfSim.shape[0]
     # Compute MDD
     dfMDD = pd.DataFrame(columns=dfSimT.columns)
@@ -134,16 +134,16 @@ def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
     # Compute percentage of simulations having MDD greater than the levels
     dictMDD = {}
     for value in levelsMDD:
-        dictMDD[value] = dfMDD[dfMDD[numTrial] <= -value].shape[0] / numSim
+        dictMDD[value] = dfMDD[dfMDD[numTrials] <= -value].shape[0] / numSim
 
     return dfMDD, dictMDD
 
-def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=400):
+def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """Plot equity curves from the betting simulations."""
     # Dataframe and KPI dict from `getSimKPI_fixPctBet()` function
-    dfSim, dictKPI = getSimKPI_fixPctBet(initAmount, f, p, b, numTrial, numSim)
+    dfSim, dictKPI = getSimKPI_fixPctBet(initAmount, f, p, b, numTrials, numSim)
     # First line of diagram title
-    title = f'{numSim} simulations of {numTrial}-step binary game \n'
+    title = f'{numSim} simulations of {numTrials}-step binary game \n'
     title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
 
     # Percentage of final equity above or equal to initial amount
@@ -166,7 +166,7 @@ def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrial=50, numSim=
 
     # Adopt semi-log scale for fixed-percent-betting & linear scale for fixed-amount-betting
     plt.semilogy(dfPlot)
-    plt.plot(dfPlot.index, np.repeat(initAmount, numTrial), color='black', linewidth=3, linestyle='dashed')
+    plt.plot(dfPlot.index, np.repeat(initAmount, numTrials), color='black', linewidth=3, linestyle='dashed')
     plt.show()
 
 def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
