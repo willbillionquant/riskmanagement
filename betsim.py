@@ -98,9 +98,9 @@ def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numS
     dictKPI['f'] = f
     dictKPI['profitfactor'] = round(getProfitfactor(p, b), 4)
     dictKPI['win%'] = round(100 * dfSim[dfSim[numTrials] >= initAmount].shape[0] / numSim, 2)
-    dictKPI['amountAvg'] = round(dfSim[numTrials].mean(), 2)
-    dictKPI['amountMed'] = round(dfSim[numTrials].median(), 2)
-    dictKPI['amountStd'] = round(dfSim[numTrials].std(), 2)
+    dictKPI['avgAmount'] = round(dfSim[numTrials].mean(), 2)
+    dictKPI['midAmount'] = round(dfSim[numTrials].median(), 2)
+    dictKPI['stdAmount'] = round(dfSim[numTrials].std(), 2)
 
     return dfSim, dictKPI
 
@@ -113,9 +113,9 @@ def getSimKPI_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, 
     dictKPI['lev'] = lev
     dictKPI['NAsharpe'] = round(miu * (numPeriod ** 0.5) / sig, 4)
     dictKPI['win%'] = round(100 * dfSim[dfSim[numPeriod] >= initAmount].shape[0] / numSim, 2)
-    dictKPI['amountAvg'] = round(dfSim[numPeriod].mean(), 2)
-    dictKPI['amountMed'] = round(dfSim[numPeriod].median(), 2)
-    dictKPI['amountStd'] = round(dfSim[numPeriod].std(), 2)
+    dictKPI['avgAmount'] = round(dfSim[numPeriod].mean(), 2)
+    dictKPI['midAmount'] = round(dfSim[numPeriod].median(), 2)
+    dictKPI['stdAmount'] = round(dfSim[numPeriod].std(), 2)
 
     return dfSim, dictKPI
 
@@ -148,14 +148,14 @@ def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim
 
     # Percentage of final equity above or equal to initial amount
     winrate = dictKPI['win%']
-    amountAvg = dictKPI['amountAvg']  # Arithmetic mean of final equity
-    amountMed = dictKPI['amountMed']  # Median of final equity
-    amountStd = dictKPI['amountStd']  # SD of final equity
+    avgAmount = dictKPI['avgAmount']  # Arithmetic mean of final equity
+    midAmount = dictKPI['midAmount']  # Median of final equity
+    stdAmount = dictKPI['stdAmount']  # SD of final equity
     profitfactor = dictKPI['profitfactor']
 
     # Attach key stats to title text
     title += f'Profit factor: {profitfactor}, final winrate: {winrate}% \n'
-    title += f'Final equity mean: {amountAvg}, median: {amountMed}, SD: {amountStd}'
+    title += f'Final equity mean: {avgAmount}, median: {midAmount}, SD: {stdAmount}'
 
     # Plot figure & append title
     fig = plt.figure(figsize=(12, 9))
@@ -178,13 +178,13 @@ def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, nu
     title += f'leverage {round(lev, 4)}, miu {round(100*miu, 2)}%, sig {round(100*sig, 2)}%\n'
     # Percentage of final equity above or equal to initial amount
     winrate = dictKPI['win%']
-    amountAvg = dictKPI['amountAvg'] # Arithmetic mean of final equity
-    amountMed = dictKPI['amountMed'] # Median of final equity
-    amountStd = dictKPI['amountStd'] # SD of final equity
+    avgAmount = dictKPI['avgAmount'] # Arithmetic mean of final equity
+    midAmount = dictKPI['midAmount'] # Median of final equity
+    stdAmount = dictKPI['stdAmount'] # SD of final equity
     # Attach key stats to title text
     sharpe = dictKPI['NAsharpe']
     title += f'NA-sharpe: {sharpe}, final winrate: {winrate}% \n'
-    title += f'Final equity mean: {amountAvg}, median: {amountMed}, SD: {amountStd}'
+    title += f'Final equity mean: {avgAmount}, median: {midAmount}, SD: {stdAmount}'
     # Plot figure
     fig = plt.figure(figsize=(12, 9))
     # Append title
