@@ -195,21 +195,3 @@ def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, nu
     plt.semilogy(dfplot)
     plt.plot(dfplot.index, np.repeat(initAmount, numPeriod), color='black', linewidth=3, linestyle='dashed')
     plt.show()
-
-def getExpGrowth(p=0.5, b=1.5, f=0.1, n=1):
-    """
-    Obtain expected geometric return of repeated trials of a binary game.
-    p: winning rate
-    b: odds / reward-risk-ratio
-    f: fixed percent of each bet
-    n: number of trials
-    """
-    logGrowth = p * np.log(1 + b * f) + (1 - p) * np.log(1 - f)
-
-    return np.exp(n * logGrowth)
-
-def getNormalGrowth(lev=1.00, miu=0.03, sig=0.15, n=1):
-    """Obtain expected geometric returns of random walk returns."""
-    logGrowth = n * lev * (miu - sig ** 2 * lev / 2)
-
-    return np.exp(n * logGrowth)
