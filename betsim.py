@@ -7,12 +7,14 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def getSim_binaryFixPct(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+
+def getSim_binaryFixAmount(initAmount=100, a=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """
-    Obtain dictionary of equal-percent-bet simulation results.
+    Obtain dictionary of equal-amount-bet simulation results.
     initAmount: initial amount for betting
     f: percent per bet
     p: winning probability
+    b: reward-to-risk ratio (/ odds)
     numTrialss: number of trials of the same binary game
     numSim: number of binary simulations
     """
@@ -21,11 +23,53 @@ def getSim_binaryFixPct(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numS
     # Dict for recording different series of capital (total equity)
     amountDict = {}
     # Generate a total of `numSim`= N series of binary game result and P/L
+    stepFunc = lambda x: 1 if x > 0 else 0  # Lambda Function for getting "1" with a fixed prob and "0" otherwise
     for num in range(numSim):
         # Generate a series of "1"/"0" with probability p
-        stepFunc = lambda x: 1 if x > 0 else 0  # Lambda Function for getting "1" with a fixed prob and "0" otherwise
         signArray = np.array([stepFunc(r) for r in np.random.uniform(p - 1, p, numTrials)])
-        # Series of asset growth factor based on win/loss result (EITHER (1 + b * f%) OR (1 -f%))
+        # Series of asset increment on win/loss result (EITHER increase by a * b OR decrease by a)
+        trialArray = a * ((b + 1) * signArray - 1)
+        # Record the asset increment series into `simDict`
+        simDict[num + 1] = trialArray
+        # Array of total equity and record into `amountDict`
+        amountArray = initAmount + trialArray.cumsum()
+        # IF equity drops below the fixed bet amount, stop betting
+        period = 1
+        while period <= numTrials - 1:
+            if amountArray[period] < a:
+                for j in range(period, numTrials):
+                    amountArray[j] = amountArray[period]
+                amountDict[f's{num}'] = amountArray
+                break
+            period += 1
+        amountDict[f's{num + 1}'] = amountArray
+    # Form dataframe from the `amountDict` and transpose, so that each row corresponds to a betting series
+    dfSim = pd.DataFrame(amountDict).transpose()
+    # Rename columns so that each number in column labels corresponds to the k-th trial
+    dfSim = dfSim.rename(columns={k: (k + 1) for k in dfSim.columns})
+
+    return dfSim
+
+def getSim_binaryFixPct(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+    """
+    Obtain dictionary of equal-percent-bet simulation results.
+    initAmount: initial amount for betting
+    f: percent per bet
+    p: winning probability
+    b: reward-to-risk ratio (/ odds)
+    numTrialss: number of trials of the same binary game
+    numSim: number of binary simulations
+    """
+    # Dict for recording different series of profit/loss
+    simDict = {}
+    # Dict for recording different series of capital (total equity)
+    amountDict = {}
+    # Generate a total of `numSim`= N series of binary game result and P/L
+    stepFunc = lambda x: 1 if x > 0 else 0  # Lambda Function for getting "1" with a fixed prob and "0" otherwise
+    for num in range(numSim):
+        # Generate a series of "1"/"0" with probability p
+        signArray = np.array([stepFunc(r) for r in np.random.uniform(p - 1, p, numTrials)])
+        # Series of asset growth factor on win/loss result (EITHER (1 + b * f%) OR (1 -f%))
         trialArray = 1 + f * ((b + 1) * signArray - 1) / 100
         # Record the asset growth factor series into `simDict`
         simDict[num + 1] = trialArray
@@ -138,10 +182,10 @@ def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
 
     return dfMDD, dictMDD
 
-def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+def plotSim_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """Plot equity curves from the betting simulations."""
-    # Dataframe and KPI dict from `getSimKPI_binaryFixPct()` function
-    dfSim, dictKPI = getSimKPI_binaryFixPct(initAmount, f, p, b, numTrials, numSim)
+    # Dataframe and KPI dict from `getSimKPI_discretePL()` function
+    dfSim, dictKPI = getSimKPI_discretePL(simFunc, initAmount, f, p, b, numTrials, numSim)
     # First line of diagram title
     title = f'{numSim} simulations of {numTrials}-step binary game \n'
     title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
