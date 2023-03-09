@@ -82,14 +82,14 @@ def getSim_binaryFixPct(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numS
 
     return dfSim
 
-def getSim_normalFixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+def getSim_normalFixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriods=60, numSim=1000):
     """
     Obtain dataframe of fixed-leverage-bet simulations, with returns of each interval normally distributed.
     Assume zero-cost-rebalance at the end of each period.
     initAmount: initial capital
     miu: (non-annualized) mean return
     sig: (non-annualized) sigma
-    numPeriod: number of periods
+    numPeriods: number of periods
     numSim: number of simulations
     """
     # Dict for recording different series of total equity
@@ -97,7 +97,7 @@ def getSim_normalFixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=6
     # Generate a total of `numSim`= N series of normally distributed returns
     for num in range(numSim):
         # vector of log returns in each period and exponentiate
-        pctArray = np.exp(np.random.normal(miu, sig, numPeriod))
+        pctArray = np.exp(np.random.normal(miu, sig, numPeriods))
         # convert into growth factor vector by converting to percentage change vector, multiply by leverage, and add 1
         factorArray = 1 + lev * (pctArray - 1)
         # equity vector by cumulative multiplying by growth factors
@@ -107,9 +107,9 @@ def getSim_normalFixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=6
         # (This artificial "residual equity" is unreal assummption, the reality is more cruel than this!)
         period = 1
         ruimAmount = initAmount / 10000
-        while period <= numPeriod - 1:
+        while period <= numPeriods - 1:
             if amountArray[period] <= ruimAmount:
-                for j in range(period, numPeriod):
+                for j in range(period, numPeriods):
                     amountArray[j] = ruimAmount
                 break
             period += 1
@@ -148,18 +148,18 @@ def getSimKPI_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrial
 
     return dfSim, dictKPI
 
-def getSimKPI_normalPL(simFunc, initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+def getSimKPI_normalPL(simFunc, initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriods=60, numSim=1000):
     """Obtain a dictionary of final performance KPI of simulations. """
-    dfSim = simFunc(initAmount, lev, miu, sig, numPeriod, numSim)
+    dfSim = simFunc(initAmount, lev, miu, sig, numPeriods, numSim)
     dictKPI = {}
     dictKPI['miu'] = miu
     dictKPI['sig'] = sig
     dictKPI['lev'] = lev
-    dictKPI['NAsharpe'] = round(miu * (numPeriod ** 0.5) / sig, 4)
-    dictKPI['win%'] = round(100 * dfSim[dfSim[numPeriod] >= initAmount].shape[0] / numSim, 2)
-    dictKPI['avgAmount'] = round(dfSim[numPeriod].mean(), 2)
-    dictKPI['midAmount'] = round(dfSim[numPeriod].median(), 2)
-    dictKPI['stdAmount'] = round(dfSim[numPeriod].std(), 2)
+    dictKPI['NAsharpe'] = round(miu * (numPeriods ** 0.5) / sig, 4)
+    dictKPI['win%'] = round(100 * dfSim[dfSim[numPeriods] >= initAmount].shape[0] / numSim, 2)
+    dictKPI['avgAmount'] = round(dfSim[numPeriods].mean(), 2)
+    dictKPI['midAmount'] = round(dfSim[numPeriods].median(), 2)
+    dictKPI['stdAmount'] = round(dfSim[numPeriods].std(), 2)
 
     return dfSim, dictKPI
 
@@ -182,13 +182,16 @@ def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
 
     return dfMDD, dictMDD
 
-def plotSim_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+def plotSim_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400, semilog=True):
     """Plot equity curves from the betting simulations."""
     # Dataframe and KPI dict from `getSimKPI_discretePL()` function
     dfSim, dictKPI = getSimKPI_discretePL(simFunc, initAmount, f, p, b, numTrials, numSim)
     # First line of diagram title
     title = f'{numSim} simulations of {numTrials}-step binary game \n'
-    title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
+    if semilog:
+        title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
+    else:
+        title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, ${f} per bet \n'
 
     # Percentage of final equity above or equal to initial amount
     winrate = dictKPI['win%']
@@ -209,16 +212,18 @@ def plotSim_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=
     dfPlot = dfSim.transpose()
 
     # Adopt semi-log scale for fixed-percent-betting & linear scale for fixed-amount-betting
-    plt.semilogy(dfPlot)
+    if semilog:
+        plt.semilogy(dfPlot)
     plt.plot(dfPlot.index, np.repeat(initAmount, numTrials), color='black', linewidth=3, linestyle='dashed')
     plt.show()
+    plt.show()
 
-def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+def plotSim_normalPL(simFunc, initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriods=60, numSim=1000):
     """Plot equity curves from the betting simulations."""
     # Dataframe and KPI dict from `getSimKPI()` function
-    dfSim, dictKPI = getSimKPI_normalPL(initAmount, lev, miu, sig, numPeriod, numSim)
+    dfSim, dictKPI = getSimKPI_normalPL(simFunc, initAmount, lev, miu, sig, numPeriods, numSim)
     # First line of diagram title
-    title = f'{numSim} simulations of {numPeriod}-periods \n'
+    title = f'{numSim} simulations of {numPeriods}-periods \n'
     title += f'leverage {round(lev, 4)}, miu {round(100*miu, 2)}%, sig {round(100*sig, 2)}%\n'
     # Percentage of final equity above or equal to initial amount
     winrate = dictKPI['win%']
@@ -237,5 +242,5 @@ def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, nu
     dfplot = dfSim.transpose()
     # Adopt semi-log scale for fixed-percent-betting & linear scale for fixed-amount-betting
     plt.semilogy(dfplot)
-    plt.plot(dfplot.index, np.repeat(initAmount, numPeriod), color='black', linewidth=3, linestyle='dashed')
+    plt.plot(dfplot.index, np.repeat(initAmount, numPeriods), color='black', linewidth=3, linestyle='dashed')
     plt.show()
