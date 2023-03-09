@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def getSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+def getSim_binaryFixPct(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """
     Obtain dictionary of equal-percent-bet simulation results.
     initAmount: initial amount for betting
@@ -38,7 +38,7 @@ def getSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=
 
     return dfSim
 
-def getSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+def getSim_normalFixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
     """
     Obtain dataframe of fixed-leverage-bet simulations, with returns of each interval normally distributed.
     Assume zero-cost-rebalance at the end of each period.
@@ -89,9 +89,9 @@ def getWinrate(b, pf):
     """Given fixed odds and profit factor, find winning rate."""
     return pf / (pf + b)
 
-def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
+def getSimKPI_discretePL(simFunc, initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """Obtain a dictionary of final performance KPI of simulations. """
-    dfSim = getSim_fixPctBet(initAmount, f, p, b, numTrials, numSim)
+    dfSim = simFunc(initAmount, f, p, b, numTrials, numSim)
     dictKPI = {}
     dictKPI['p'] = p
     dictKPI['b'] = b
@@ -104,9 +104,9 @@ def getSimKPI_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numS
 
     return dfSim, dictKPI
 
-def getSimKPI_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
+def getSimKPI_normalPL(simFunc, initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
     """Obtain a dictionary of final performance KPI of simulations. """
-    dfSim = getSim_fixLev(initAmount, lev, miu, sig, numPeriod, numSim)
+    dfSim = simFunc(initAmount, lev, miu, sig, numPeriod, numSim)
     dictKPI = {}
     dictKPI['miu'] = miu
     dictKPI['sig'] = sig
@@ -140,8 +140,8 @@ def getSimMDD(dfSim, levelsMDD=(0.2, 0.5, 0.8, 0.9)):
 
 def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim=400):
     """Plot equity curves from the betting simulations."""
-    # Dataframe and KPI dict from `getSimKPI_fixPctBet()` function
-    dfSim, dictKPI = getSimKPI_fixPctBet(initAmount, f, p, b, numTrials, numSim)
+    # Dataframe and KPI dict from `getSimKPI_binaryFixPct()` function
+    dfSim, dictKPI = getSimKPI_binaryFixPct(initAmount, f, p, b, numTrials, numSim)
     # First line of diagram title
     title = f'{numSim} simulations of {numTrials}-step binary game \n'
     title += f'Winning rate {round(p, 4)}, odds {round(b, 4)}, {f}% per bet \n'
@@ -172,7 +172,7 @@ def plotSim_fixPctBet(initAmount=100, f=12.5, p=0.5, b=1.5, numTrials=50, numSim
 def plotSim_fixLev(initAmount=100, lev=1.00, miu=0.05, sig=0.2, numPeriod=60, numSim=1000):
     """Plot equity curves from the betting simulations."""
     # Dataframe and KPI dict from `getSimKPI()` function
-    dfSim, dictKPI = getSimKPI_fixLev(initAmount, lev, miu, sig, numPeriod, numSim)
+    dfSim, dictKPI = getSimKPI_normalPL(initAmount, lev, miu, sig, numPeriod, numSim)
     # First line of diagram title
     title = f'{numSim} simulations of {numPeriod}-periods \n'
     title += f'leverage {round(lev, 4)}, miu {round(100*miu, 2)}%, sig {round(100*sig, 2)}%\n'
